@@ -46,6 +46,7 @@ view: ga_sessions {
       ""
     {%endif%}
     ;;
+    drill_fields: [set_detail*]
   }
 
   dimension: depth_2 {
@@ -63,6 +64,7 @@ view: ga_sessions {
       ""
     {%endif%}
     ;;
+    drill_fields: [set_detail*]
   }
 
   measure: dynamic_title_trend {
@@ -88,6 +90,11 @@ view: ga_sessions {
   }
 
 
+  set: set_detail {
+    fields: [device__browser,device__operating_system,geo_network__country,geo_network__region]
+  }
+
+#######
 
   dimension: channel_grouping {
 
@@ -134,6 +141,7 @@ view: ga_sessions {
     sql: ${TABLE}.device.browser ;;
     group_label: "Device"
     group_item_label: "Browser"
+    drill_fields: [set_detail*]
   }
 
   dimension: device__operating_system {
@@ -141,6 +149,7 @@ view: ga_sessions {
     sql: ${TABLE}.device.operatingSystem ;;
     group_label: "Device"
     group_item_label: "Operating System"
+    drill_fields: [set_detail*]
   }
 
   dimension: full_visitor_id {
