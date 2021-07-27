@@ -2,6 +2,93 @@ view: ga_sessions {
   sql_table_name: `GMC_PoC.ga_sessions`
     ;;
 
+  parameter: p_suggest {
+    label: "test suggestion"
+    suggest_dimension: "device__operating_system"
+  }
+
+
+  parameter: p_depth_1{
+    label: "Depth 1"
+    type: string
+    default_value: "Browser"
+    allowed_value: {label:  "NULL" value: "NULL"}
+    allowed_value: {label : "Browser" value : "Browser"}
+    allowed_value: {label : "Operating System" value: "Operating System"}
+    allowed_value: {label : "Country" value : "Country"}
+    allowed_value: {label : "Region" value : "Region"}
+  }
+
+  parameter: p_depth_2{
+    label: "Depth 2"
+    type: string
+    default_value: "Country"
+    allowed_value: {label:  "NULL" value: "NULL"}
+    allowed_value: {label : "Browser" value : "Browser"}
+    allowed_value: {label : "Operating System" value: "Operating System"}
+    allowed_value: {label : "Country" value : "Country"}
+    allowed_value: {label : "Region" value : "Region"}
+  }
+
+
+  dimension: depth_1 {
+    type: string
+    sql:
+    {% if p_depth_1._parameter_value == "'Browser'"%}
+      ${device__browser}
+    {% elsif p_depth_1._parameter_value == "'Operating System'"%}
+      ${device__operating_system}
+    {% elsif p_depth_1._parameter_value == "'Country'"%}
+      ${geo_network__country}
+    {% elsif p_depth_1._parameter_value == "'Region'"%}
+      ${geo_network__region}
+    {% elsif p_depth_1._parameter_value == "'NULL'"%}
+      ""
+    {%endif%}
+    ;;
+  }
+
+  dimension: depth_2 {
+    type: string
+    sql:
+    {% if p_depth_2._parameter_value == "'Browser'"%}
+      ${device__browser}
+    {% elsif p_depth_2._parameter_value == "'Operating System'"%}
+      ${device__operating_system}
+    {% elsif p_depth_2._parameter_value == "'Country'"%}
+      ${geo_network__country}
+    {% elsif p_depth_2._parameter_value == "'Region'"%}
+      ${geo_network__region}
+    {% elsif p_depth_2._parameter_value == "'NULL'"%}
+      ""
+    {%endif%}
+    ;;
+  }
+
+  measure: dynamic_title_trend {
+    type: max
+    sql: 1 ;;
+    html: <p style=
+              "color: #412399;
+              font-size:80%;
+              text-align:left">
+              {{ p_first_metric._parameter_value }} Performance Trend
+              </p>;;
+  }
+
+  measure: dynamic_title_bar {
+    type: max
+    sql: 1;;
+    html: <p style=
+              "color: #412399;
+              font-size:80%;
+              text-align:left">
+              {{_filters['device__operating_system']}} Performance Trend per Channel Grouping
+      </p>;;
+  }
+
+
+
   dimension: channel_grouping {
 
     type: string
@@ -23,6 +110,22 @@ view: ga_sessions {
     type: date
     datatype: date
     sql: PARSE_DATE("%Y%m%d", ${TABLE}.date) ;;
+  }
+
+  dimension_group: date_group {
+    hidden: yes
+    type: time
+    timeframes: [
+      raw,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    convert_tz: no
+    datatype: date
+    sql: ${date_formatted} ;;
   }
 
 
@@ -242,17 +345,20 @@ view: ga_sessions {
   #}
 
   measure: total_visit {
+    group_label: "Engage Summary"
     type: sum
     sql: ${TABLE}.totals.visits;;
   }
 
   measure: total_new_visits {
+    group_label: "Engage Summary"
     type: sum
     sql: ${TABLE}.totals.newVisits ;;
 #    filters: [new_visits: "not null"]
   }
 
   measure: new_percent {
+    group_label: "Engage Summary"
     type: number
     sql: (${total_new_visits}/${total_visit}) ;;
     value_format: "0%"
@@ -260,135 +366,21 @@ view: ga_sessions {
 
   ###Retain_summary
   measure: total_page_visits {
+    group_label: "Retain Summary"
     type: sum
     sql: ${TABLE}.totals.visits ;;
   }
 
   measure : user_count {
+    group_label: "Retain Summary"
     type :  count_distinct
     sql: ${TABLE}.visitId ;;
   }
 
   measure: avg_page_visit_per_user  {
+    group_label: "Retain Summary"
     type : number
     sql: ${total_page_visits}/${user_count} ;;
     value_format: "0.0000%"
   }
-}
-
-view: ga_sessions__hits {
-
-  dimension: data_source {
-    type: string
-    sql: ${TABLE}.dataSource ;;
-  }
-
-  dimension: e_commerce_action__action_type {
-    type: string
-    sql: ${TABLE}.eCommerceAction.action_type ;;
-    group_label: "E Commerce Action"
-    group_item_label: "Action Type"
-  }
-
-  dimension: e_commerce_action__option {
-    hidden: yes
-    type: string
-    sql: ${TABLE}.eCommerceAction.option ;;
-    group_label: "E Commerce Action"
-    group_item_label: "Option"
-  }
-
-  dimension: e_commerce_action__step {
-    hidden: yes
-    type: number
-    sql: ${TABLE}.eCommerceAction.step ;;
-    group_label: "E Commerce Action"
-    group_item_label: "Step"
-  }
-
-  dimension: hit_number {
-    hidden: yes
-    type: number
-    sql: ${TABLE}.hitNumber ;;
-  }
-
-  dimension: hour {
-    type: number
-    sql: ${TABLE}.hour ;;
-  }
-
-  dimension: minute {
-    type: number
-    sql: ${TABLE}.minute ;;
-  }
-
-  dimension: product {
-    hidden: yes
-    sql: ${TABLE}.product ;;
-  }
-
-  dimension: promotion {
-    hidden: yes
-    sql: ${TABLE}.promotion ;;
-  }
-
-  dimension: time {
-    type: number
-    sql: ${TABLE}.time ;;
-  }
-
-
-  dimension: type {
-    type: string
-    sql: ${TABLE}.type ;;
-  }
-}
-
-view: ga_sessions__hits__product {
-  dimension: custom_dimensions {
-    hidden: yes
-    sql: ${TABLE}.customDimensions ;;
-  }
-
-  dimension: custom_metrics {
-    hidden: yes
-    sql: ${TABLE}.customMetrics ;;
-  }
-
-  dimension: is_click {
-    hidden: yes
-    type: yesno
-    sql: ${TABLE}.isClick ;;
-  }
-
-  dimension: is_impression {
-    hidden: yes
-    type: yesno
-    sql: ${TABLE}.isImpression ;;
-  }
-
-  dimension: local_product_price {
-    hidden: yes
-    type: number
-    sql: ${TABLE}.localProductPrice ;;
-  }
-
-  dimension: local_product_refund_amount {
-    hidden: yes
-    type: number
-    sql: ${TABLE}.localProductRefundAmount ;;
-  }
-
-  dimension: local_product_revenue {
-    type: number
-    sql: ${TABLE}.localProductRevenue ;;
-  }
-
-### Convert_Summary
-  measure: product_revenue_measure {
-    type: sum
-    sql: ${local_product_revenue};;
-    description: "the number of tims and ad has been searved"
-  }
-###
 }
